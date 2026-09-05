@@ -1,0 +1,7 @@
+{
+  "id": "GC-11",
+  "name": "table_context_preserved",
+  "description": "F-01 retrieval preserves description, header, quantity and unit context.",
+  "expected_status": "SUPPORTED",
+  "expected_findings": []
+}

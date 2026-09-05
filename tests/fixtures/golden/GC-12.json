@@ -1,0 +1,7 @@
+{
+  "id": "GC-12",
+  "name": "requested_vs_approved",
+  "description": "Requested change is +500 but approved change is +300 and invoice is +300.",
+  "expected_status": "SUPPORTED",
+  "expected_findings": []
+}

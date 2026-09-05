@@ -1,0 +1,10 @@
+{
+  "id": "GC-02",
+  "name": "invoice_exceeds_approved",
+  "description": "Invoice is 1,500 m\u00b2 while original plus approved change is 1,300 m\u00b2.",
+  "expected_status": "REVIEW_REQUIRED",
+  "expected_findings": [
+    "QUANTITY_CONFLICT"
+  ],
+  "expected_difference": 200
+}

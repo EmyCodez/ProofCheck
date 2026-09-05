@@ -1,0 +1,7 @@
+{
+  "id": "GC-05",
+  "name": "measurement_less_than_approved",
+  "description": "Approved additional quantity is 300, measured additional quantity is 280, invoice is 280.",
+  "expected_status": "SUPPORTED",
+  "expected_findings": []
+}

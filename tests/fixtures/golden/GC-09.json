@@ -1,0 +1,7 @@
+{
+  "id": "GC-09",
+  "name": "retrieval_failure",
+  "description": "Retrieval dependency fails before evidence can be established.",
+  "expected_status": "BLOCKED",
+  "expected_findings": []
+}

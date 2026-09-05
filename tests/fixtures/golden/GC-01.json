@@ -1,0 +1,7 @@
+{
+  "id": "GC-01",
+  "name": "perfect_match",
+  "description": "Invoice quantity equals supported verified quantity.",
+  "expected_status": "SUPPORTED",
+  "expected_findings": []
+}

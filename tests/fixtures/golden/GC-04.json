@@ -1,0 +1,9 @@
+{
+  "id": "GC-04",
+  "name": "change_requested_not_approved",
+  "description": "Change request is submitted but no approved change order exists.",
+  "expected_status": "REVIEW_REQUIRED",
+  "expected_findings": [
+    "MISSING_EVIDENCE"
+  ]
+}

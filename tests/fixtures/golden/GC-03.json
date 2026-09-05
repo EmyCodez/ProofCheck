@@ -1,0 +1,10 @@
+{
+  "id": "GC-03",
+  "name": "invoice_arithmetic_error",
+  "description": "Quantity and unit price imply 120,000 but invoice total is 125,000.",
+  "expected_status": "REVIEW_REQUIRED",
+  "expected_findings": [
+    "CALCULATION_ERROR"
+  ],
+  "expected_difference": 5000
+}

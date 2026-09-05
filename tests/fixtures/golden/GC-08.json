@@ -1,0 +1,9 @@
+{
+  "id": "GC-08",
+  "name": "ambiguous_correspondence",
+  "description": "Proceeding with work while formal variation documentation is processed is not treated as formal approval.",
+  "expected_status": "REVIEW_REQUIRED",
+  "expected_findings": [
+    "MISSING_EVIDENCE"
+  ]
+}

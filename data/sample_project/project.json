@@ -1,0 +1,113 @@
+{
+  "project_id": "ALNOOR-FLOORING",
+  "project_name": "Al Noor Office Building \u2014 Flooring Package",
+  "documents": [
+    {
+      "document_id": "DOC-001",
+      "filename": "01_original_contract.pdf",
+      "document_type": "CONTRACT",
+      "content": {
+        "F-01": {
+          "description": "Office floor tiles",
+          "quantity": 1000,
+          "unit": "m\u00b2",
+          "unit_price": 80
+        },
+        "F-02": {
+          "description": "Floor skirting",
+          "quantity": 600,
+          "unit": "m",
+          "unit_price": 25
+        },
+        "clauses": {
+          "12": "Payment based on approved project records and verified measurement.",
+          "13": "Additional quantities outside original scope require an approved Change Order before treated as approved additional scope.",
+          "14": "Payment claims are supported by invoice, measurement/work records and relevant approved changes."
+        }
+      }
+    },
+    {
+      "document_id": "DOC-002",
+      "filename": "02_boq.pdf",
+      "document_type": "BOQ",
+      "content": {
+        "F-01": {
+          "description": "Office floor tiles",
+          "quantity": 1000,
+          "unit": "m\u00b2",
+          "unit_price": 80,
+          "total": 80000
+        },
+        "F-02": {
+          "description": "Floor skirting",
+          "quantity": 600,
+          "unit": "m",
+          "unit_price": 25,
+          "total": 15000
+        },
+        "total": 95000
+      }
+    },
+    {
+      "document_id": "DOC-003",
+      "filename": "03_change_request_001.pdf",
+      "document_type": "CHANGE_REQUEST",
+      "content": {
+        "change_id": "CR-001",
+        "requested_additional_quantity": 300,
+        "unit": "m\u00b2",
+        "unit_price": 80,
+        "status": "SUBMITTED_FOR_APPROVAL"
+      }
+    },
+    {
+      "document_id": "DOC-004",
+      "filename": "04_approved_change_order_001.pdf",
+      "document_type": "APPROVED_CHANGE",
+      "content": {
+        "change_order": "CO-001",
+        "reference": "CR-001",
+        "approved_additional_quantity": 300,
+        "unit": "m\u00b2",
+        "unit_price": 80,
+        "status": "APPROVED",
+        "approval_date": "2026-08-12"
+      }
+    },
+    {
+      "document_id": "DOC-005",
+      "filename": "05_work_measurement_record.pdf",
+      "document_type": "WORK_RECORD",
+      "content": {
+        "original_quantity": 1000,
+        "additional_quantity": 280,
+        "total_measured": 1280,
+        "unit": "m\u00b2"
+      }
+    },
+    {
+      "document_id": "DOC-006",
+      "filename": "06_invoice_INV1042.pdf",
+      "document_type": "INVOICE",
+      "content": {
+        "invoice_id": "INV-1042",
+        "line": "Office floor tiles",
+        "quantity": 1500,
+        "unit": "m\u00b2",
+        "unit_price": 80,
+        "total": 120000
+      }
+    },
+    {
+      "document_id": "DOC-007",
+      "filename": "07_correspondence.pdf",
+      "document_type": "CORRESPONDENCE",
+      "content": {
+        "messages": [
+          "PM: Revised layout requires additional flooring; proceed while formal variation documentation is processed.",
+          "Contractor: Completed additional flooring."
+        ]
+      }
+    }
+  ]
+}

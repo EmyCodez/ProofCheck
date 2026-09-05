@@ -1,0 +1,9 @@
+{
+  "id": "GC-06",
+  "name": "unit_mismatch",
+  "description": "Evidence compares square metres with linear metres.",
+  "expected_status": "REVIEW_REQUIRED",
+  "expected_findings": [
+    "UNIT_MISMATCH"
+  ]
+}

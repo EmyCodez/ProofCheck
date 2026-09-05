@@ -1,0 +1,7 @@
+{
+  "id": "GC-07",
+  "name": "latest_revision",
+  "description": "Latest approved revision supersedes an earlier revision.",
+  "expected_status": "SUPPORTED",
+  "expected_findings": []
+}
