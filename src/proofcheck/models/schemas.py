@@ -82,6 +82,17 @@ class Evidence(BaseModel):
     document_date: str | None = None
     retrieval_score: float | None = None
 
+class RetrievalChunk(BaseModel):
+    chunk_id: str
+    document_id: str
+    project_id: str
+    document_type: DocumentType
+    chunk_type: str
+    text: str
+    page: int | None = None
+    section: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
 
 class Claim(BaseModel):
     claim_id: str
