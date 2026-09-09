@@ -8,7 +8,7 @@ def test_investigator_prompt_defines_role_and_goal():
     assert "Determine what evidence is needed" in prompt
 
 
-def test_investigator_prompt_defines_approved_tools():
+def test_investigator_prompt_defines_investigation_tools():
     prompt = INVESTIGATOR_SYSTEM_PROMPT
 
     for tool_name in [
@@ -16,9 +16,10 @@ def test_investigator_prompt_defines_approved_tools():
         "check_required_evidence",
         "compare_evidence",
         "validate_calculation",
-        "generate_review_report",
     ]:
         assert tool_name in prompt
+
+    assert "Do not attempt to call a report-generation tool" in prompt
 
 
 def test_investigator_prompt_has_safety_boundaries():
