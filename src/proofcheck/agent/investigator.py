@@ -20,7 +20,7 @@ class InvestigationResult:
 class InvestigationAgent:
     """Run a bounded evidence investigation using Gemini and approved tools."""
 
-    MAX_STEPS = 8
+    MAX_TOOL_CALLS = 8
 
     def __init__(
         self,
@@ -58,7 +58,7 @@ class InvestigationAgent:
 
         tool_calls = 0
 
-        for _ in range(self.MAX_STEPS):
+        for _ in range(self.MAX_TOOL_CALLS):
             try:
                 response = self.client.client.chat.completions.create(
                     model=self.client.model,
@@ -105,11 +105,18 @@ class InvestigationAgent:
                 )
 
             for tool_call in message.tool_calls:
-                if tool_calls >= self.MAX_STEPS:
+                if tool_calls >= self.MAX_TOOL_CALLS:
+                    try:
+                        final_text = self._request_final_synthesis(messages)
+                    except Exception as exc:
+                        raise RuntimeError(
+                             "Final investigation synthesis failed."
+                        ) from exc
+
                     return InvestigationResult(
-                        text=None,
+                        text=final_text,
                         tool_calls=tool_calls,
-                        blocked=True,
+                        blocked=False,
                     )
 
                 try:
@@ -141,11 +148,43 @@ class InvestigationAgent:
 
                 tool_calls += 1
 
+        try:
+            final_text = self._request_final_synthesis(messages)
+        except Exception as exc:
+            raise RuntimeError(
+             "Final investigation synthesis failed."
+            ) from exc
+
         return InvestigationResult(
-            text=None,
+            text=final_text,
             tool_calls=tool_calls,
-            blocked=True,
+            blocked=False,
         )
+
+    def _request_final_synthesis(
+        self,
+        messages: list[dict[str, Any]],
+    ) -> str | None:
+        """Ask the LLM to synthesize the investigation without more tools."""
+        synthesis_messages = [
+            *messages,
+            {
+                "role": "user",
+                "content": (
+                    "The investigation tool-call limit has been reached. "
+                    "Do not request any more tools. Synthesize the evidence "
+                    "already gathered and provide the final evidence-backed "
+                    "investigation result."
+                ),
+            },
+        ]
+
+        response = self.client.client.chat.completions.create(
+            model=self.client.model,
+            messages=synthesis_messages,
+        )
+
+        return response.choices[0].message.content
 
     @staticmethod
     def _serialize_tool_result(result: Any) -> dict[str, Any]:

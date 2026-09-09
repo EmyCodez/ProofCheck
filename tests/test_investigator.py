@@ -128,7 +128,7 @@ def test_investigator_executes_tool_and_returns_final_response(monkeypatch):
     assert result.blocked is False
 
 
-def test_investigator_stops_at_max_steps(monkeypatch):
+def test_investigator_synthesizes_at_tool_call_limit(monkeypatch):
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
 
     client = LLMClient()
@@ -144,25 +144,52 @@ def test_investigator_stops_at_max_steps(monkeypatch):
         id = "call-loop"
         function = FakeFunction()
 
-    class FakeMessage:
+    class ToolMessage:
         content = None
         tool_calls = [FakeToolCall()]
 
-    class FakeChoice:
-        message = FakeMessage()
+    class ToolChoice:
+        message = ToolMessage()
 
-    class FakeResponse:
-        choices = [FakeChoice()]
+    class ToolResponse:
+        choices = [ToolChoice()]
 
-    client.client.chat.completions.create = lambda **kwargs: FakeResponse()
+    class FinalMessage:
+        content = "The investigation was completed using the evidence gathered."
+        tool_calls = None
+
+    class FinalChoice:
+        message = FinalMessage()
+
+    class FinalResponse:
+        choices = [FinalChoice()]
+
+    calls = {"count": 0}
+
+    def fake_create(**kwargs):
+        calls["count"] += 1
+
+        # First 8 requests request another tool.
+        if calls["count"] <= agent.MAX_TOOL_CALLS:
+            return ToolResponse()
+
+        # The next request must be the final synthesis without tools.
+        assert "tools" not in kwargs
+        return FinalResponse()
+
+    client.client.chat.completions.create = fake_create
 
     executor = ToolExecutor(None, "project-001")
     agent = InvestigationAgent(client, executor)
 
     result = agent.investigate(
-        "Keep investigating forever.",
+        "Keep investigating until the tool-call limit is reached.",
         "project-001",
     )
 
-    assert result.blocked is True
-    assert result.tool_calls == agent.MAX_STEPS
+    assert result.blocked is False
+    assert result.tool_calls == agent.MAX_TOOL_CALLS
+    assert result.text == (
+        "The investigation was completed using the evidence gathered."
+    )
+    assert calls["count"] == agent.MAX_TOOL_CALLS + 1
