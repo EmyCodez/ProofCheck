@@ -1,5 +1,5 @@
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from proofcheck.agent.prompts import INVESTIGATOR_SYSTEM_PROMPT
@@ -9,12 +9,25 @@ from proofcheck.llm.client import LLMClient
 
 
 @dataclass(frozen=True)
+class InvestigationToolResult:
+    """Structured result from one investigation tool call."""
+
+    tool_name: str
+    arguments: dict[str, Any]
+    result: Any
+    failed: bool = False
+
+
+@dataclass(frozen=True)
 class InvestigationResult:
     """Result of a bounded LLM investigation."""
 
     text: str | None
     tool_calls: int
     blocked: bool = False
+    tool_results: list[InvestigationToolResult] = field(
+        default_factory=list
+    )
 
 
 class InvestigationAgent:
@@ -57,6 +70,7 @@ class InvestigationAgent:
         ]
 
         tool_calls = 0
+        tool_results: list[InvestigationToolResult] = []
 
         for _ in range(self.MAX_TOOL_CALLS):
             try:
@@ -97,27 +111,32 @@ class InvestigationAgent:
 
                 messages.append(assistant_message)
 
-            
             if not message.tool_calls:
                 return InvestigationResult(
                     text=message.content,
                     tool_calls=tool_calls,
+                    tool_results=tool_results,
                 )
 
             for tool_call in message.tool_calls:
                 if tool_calls >= self.MAX_TOOL_CALLS:
                     try:
-                        final_text = self._request_final_synthesis(messages)
+                        final_text = self._request_final_synthesis(
+                            messages
+                        )
                     except Exception as exc:
                         raise RuntimeError(
-                             "Final investigation synthesis failed."
+                            "Final investigation synthesis failed."
                         ) from exc
 
                     return InvestigationResult(
                         text=final_text,
                         tool_calls=tool_calls,
+                        tool_results=tool_results,
                         blocked=False,
                     )
+
+                arguments: dict[str, Any] = {}
 
                 try:
                     arguments = tool_call.function.arguments
@@ -132,11 +151,28 @@ class InvestigationAgent:
 
                     tool_result = self._serialize_tool_result(result)
 
+                    tool_results.append(
+                        InvestigationToolResult(
+                            tool_name=tool_call.function.name,
+                            arguments=arguments,
+                            result=result,
+                        )
+                    )
+
                 except Exception as exc:
                     tool_result = {
                         "error": str(exc),
                         "tool_failed": True,
                     }
+
+                    tool_results.append(
+                        InvestigationToolResult(
+                            tool_name=tool_call.function.name,
+                            arguments=arguments,
+                            result=tool_result,
+                            failed=True,
+                        )
+                    )
 
                 messages.append(
                     {
@@ -152,12 +188,13 @@ class InvestigationAgent:
             final_text = self._request_final_synthesis(messages)
         except Exception as exc:
             raise RuntimeError(
-             "Final investigation synthesis failed."
+                "Final investigation synthesis failed."
             ) from exc
 
         return InvestigationResult(
             text=final_text,
             tool_calls=tool_calls,
+            tool_results=tool_results,
             blocked=False,
         )
 

@@ -1,7 +1,10 @@
 import os
 import time
 
+from dotenv import load_dotenv
 from openai import OpenAI
+
+load_dotenv()
 
 
 class LLMClient:
@@ -22,7 +25,7 @@ class LLMClient:
 
         self.model = model or os.getenv(
             "PROOFCHECK_MODEL",
-            "gemini-3.8-flash",
+            "gemini-3.5-flash-lite",
         )
         self.max_retries = max_retries
         self.client = OpenAI(

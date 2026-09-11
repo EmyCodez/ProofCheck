@@ -193,3 +193,108 @@ def test_investigator_synthesizes_at_tool_call_limit(monkeypatch):
         "The investigation was completed using the evidence gathered."
     )
     assert calls["count"] == agent.MAX_TOOL_CALLS + 1
+
+    assert len(result.tool_results) == agent.MAX_TOOL_CALLS
+    assert all(
+        tool_result.tool_name == "compare_evidence"
+        for tool_result in result.tool_results
+    )
+    assert all(
+        tool_result.failed is False
+        for tool_result in result.tool_results
+    )
+
+def test_investigator_performs_deterministic_comparison_for_numeric_claim(
+    monkeypatch,
+):
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+
+    client = LLMClient()
+
+    class SearchFunction:
+        name = "search_evidence"
+        arguments = (
+            '{"query": "invoice quantity and approved quantity"}'
+        )
+
+    class CompareFunction:
+        name = "compare_evidence"
+        arguments = (
+            '{"expected_value": 1300, '
+            '"observed_value": 1500, '
+            '"unit": "m2"}'
+        )
+
+    class SearchToolCall:
+        id = "search-001"
+        function = SearchFunction()
+
+    class CompareToolCall:
+        id = "compare-001"
+        function = CompareFunction()
+
+    class SearchMessage:
+        content = None
+        tool_calls = [SearchToolCall()]
+
+    class SearchChoice:
+        message = SearchMessage()
+
+    class SearchResponse:
+        choices = [SearchChoice()]
+
+    class CompareMessage:
+        content = None
+        tool_calls = [CompareToolCall()]
+
+    class CompareChoice:
+        message = CompareMessage()
+
+    class CompareResponse:
+        choices = [CompareChoice()]
+
+    class FinalMessage:
+        content = "The invoice quantity exceeds the supported quantity."
+        tool_calls = None
+
+    class FinalChoice:
+        message = FinalMessage()
+
+    class FinalResponse:
+        choices = [FinalChoice()]
+
+    responses = [
+        SearchResponse(),
+        CompareResponse(),
+        FinalResponse(),
+    ]
+
+    calls = {"count": 0}
+
+    def fake_create(**kwargs):
+        response = responses[calls["count"]]
+        calls["count"] += 1
+        return response
+
+    client.client.chat.completions.create = fake_create
+
+    executor = ToolExecutor(None, "project-001")
+    agent = InvestigationAgent(client, executor)
+
+    result = agent.investigate(
+        "Is the invoiced quantity of 1500 m2 sufficiently supported?",
+        "project-001",
+    )
+
+    assert result.blocked is False
+    assert result.tool_calls == 2
+
+    assert [tool_result.tool_name for tool_result in result.tool_results] == [
+        "search_evidence",
+        "compare_evidence",
+    ]
+
+    compare_result = result.tool_results[1]
+    assert compare_result.failed is False
+    assert compare_result.arguments["expected_value"] == 1300
+    assert compare_result.arguments["observed_value"] == 1500
