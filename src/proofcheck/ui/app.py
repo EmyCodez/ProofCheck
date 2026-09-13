@@ -3,41 +3,91 @@ import logging
 import gradio as gr
 
 from proofcheck.application.factory import create_proofcheck_service
+from proofcheck.application.projects import PROJECTS
 from proofcheck.application.service import InvestigationRequest
-from proofcheck.reconciliation.evidence_reconciler import EvidenceReconciler
 from proofcheck.logging_config import configure_logging
+from proofcheck.reconciliation.evidence_reconciler import EvidenceReconciler
 
-DEFAULT_PROJECT_ID = "project-001"
-DEFAULT_PROJECT = "Al Noor Office Building — Flooring Package"
+
 logger = logging.getLogger(__name__)
 configure_logging()
 
-DEFAULT_CLAIM = (
-    "Is invoice INV1042 sufficiently supported by the available "
-    "project evidence?"
-)
 
+DEFAULT_PROJECT = next(iter(PROJECTS))
+DEFAULT_PROJECT_CONFIG = PROJECTS[DEFAULT_PROJECT]
+
+CLAIM_EXAMPLES = [
+    (
+        "Supported — approved change order",
+        "Does Approved Change Order CO-001 formally approve an additional 300 m² of F-01 at AED 80 per m²?",
+    ),
+    (
+        "Invoice quantity — INV1042",
+        "Is invoice INV1042 sufficiently supported by the available project evidence?",
+    ),
+    (
+        "Invoice price — INV1042",
+        "Is the unit price charged in invoice INV1042 supported by the available project evidence?",
+    ),
+    (
+        "Approved vs measured vs invoiced",
+        "Is the invoiced quantity consistent with the approved and measured quantities?",
+    ),
+    (
+        "Change approval",
+        "Is the invoiced change supported by formal project approval?",
+    ),
+]
 
 service = create_proofcheck_service(
-    project_id=DEFAULT_PROJECT_ID,
+    project_id=DEFAULT_PROJECT_CONFIG.project_id,
+    corpus_dir=DEFAULT_PROJECT_CONFIG.corpus_dir,
 )
 
 reconciler = EvidenceReconciler()
 
+
+def on_project_change(project: str) -> str:
+    """Load the default claim for the selected project."""
+
+    if not project or project not in PROJECTS:
+        return "Select an example claim or enter your own."
+
+    return PROJECTS[project].default_claim
+
+
+def on_claim_example_change(example: str) -> str:
+    """Load the selected example claim into the editable claim box."""
+
+    if not example:
+        return ""
+
+    for label, claim_text in CLAIM_EXAMPLES:
+        if example == label:
+            return claim_text
+
+    return ""
+
+
 def investigate_claim(project: str, claim: str) -> str:
     """Run a ProofCheck investigation from the UI."""
 
-    if not project.strip():
+    if not project or project not in PROJECTS:
         raise gr.Error("Please select a project.")
 
-    if not claim.strip():
+    if not claim or not claim.strip():
         raise gr.Error("Please enter a claim to investigate.")
 
-    logger.info("investigation_started | project_id=%s", DEFAULT_PROJECT_ID)
+    project_config = PROJECTS[project]
+
+    logger.info(
+        "investigation_started | project_id=%s",
+        project_config.project_id,
+    )
 
     request = InvestigationRequest(
-        project_id=DEFAULT_PROJECT_ID,
-        claim=claim,
+        project_id=project_config.project_id,
+        claim=claim.strip(),
     )
 
     investigation = service.investigate(request)
@@ -45,7 +95,7 @@ def investigate_claim(project: str, claim: str) -> str:
     if investigation.blocked:
         logger.warning(
             "investigation_blocked | project_id=%s | tool_calls=%s",
-            DEFAULT_PROJECT_ID,
+            project_config.project_id,
             investigation.tool_calls,
         )
         return (
@@ -56,10 +106,16 @@ def investigate_claim(project: str, claim: str) -> str:
 
     reconciliation = reconciler.reconcile(investigation)
 
+    status_value = (
+        "REVIEW_REQUIRED"
+        if reconciliation.findings or not reconciliation.evidence_complete
+        else "SUPPORTED"
+    )
+
     logger.info(
         "investigation_completed | project_id=%s | status=%s | tool_calls=%s",
-        DEFAULT_PROJECT_ID,
-        "REVIEW_REQUIRED" if reconciliation.findings or not reconciliation.evidence_complete else "SUPPORTED",
+        project_config.project_id,
+        status_value,
         investigation.tool_calls,
     )
 
@@ -127,15 +183,24 @@ def build_app() -> gr.Blocks:
         )
 
         project = gr.Dropdown(
-            choices=[DEFAULT_PROJECT],
-            value=DEFAULT_PROJECT,
+            choices=list(PROJECTS.keys()),
+            value=None,
             label="Project",
+            info="Select the project whose evidence you want to investigate.",
+        )
+
+        claim_example = gr.Dropdown(
+            choices=[label for label, _ in CLAIM_EXAMPLES],
+            value=None,
+            label="Example claims",
+            info="Choose an example or write your own claim below.",
         )
 
         claim = gr.Textbox(
-            value=DEFAULT_CLAIM,
-            label="Claim",
+            value="Select an example claim or enter your own.",
+            label="Claim to investigate",
             lines=3,
+            info="You can edit the example or enter your own evidence question.",
         )
 
         with gr.Row():
@@ -144,12 +209,24 @@ def build_app() -> gr.Blocks:
                 variant="primary",
             )
             clear_button = gr.ClearButton(
-                components=[project, claim],
+                components=[project, claim_example, claim],
                 value="Clear",
             )
 
         result = gr.Markdown(
-            value="Click **Investigate Claim** to begin.",
+            value="Select a project and investigate a claim.",
+        )
+
+        project.change(
+            fn=on_project_change,
+            inputs=project,
+            outputs=claim,
+        )
+
+        claim_example.change(
+            fn=on_claim_example_change,
+            inputs=claim_example,
+            outputs=claim,
         )
 
         investigate_button.click(

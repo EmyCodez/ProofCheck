@@ -3,7 +3,7 @@ from proofcheck.agent.investigator import (
     InvestigationToolResult,
 )
 from proofcheck.reconciliation.evidence_reconciler import EvidenceReconciler
-from proofcheck.models.schemas import FindingType
+from proofcheck.models.schemas import FindingType, Severity
 
 
 def test_reconciler_creates_calculation_finding():
@@ -226,129 +226,6 @@ def test_reconciler_builds_review_from_investigation():
     assert result.findings[0].type == FindingType.CALCULATION_ERROR
 
 
-def test_reconciler_builds_review_from_investigation():
-    from proofcheck.models.schemas import Claim, ReviewStatus
-
-    claim = Claim(
-        claim_id="claim-001",
-        project_id="project-001",
-        description="Is the invoiced quantity supported?",
-        source_document_id="invoice-001",
-        claimed_quantity=1500,
-        unit="m2",
-        claimed_unit_price=80,
-        claimed_total=125000,
-    )
-
-    investigation = InvestigationResult(
-        text="The invoice calculation contains a discrepancy.",
-        tool_calls=2,
-        tool_results=[
-            InvestigationToolResult(
-                tool_name="search_evidence",
-                arguments={"query": "invoice quantity total"},
-                result=[
-                    {
-                        "chunk_id": "invoice-chunk-001",
-                        "document_id": "invoice-001",
-                    },
-                ],
-            ),
-            InvestigationToolResult(
-                tool_name="validate_calculation",
-                arguments={
-                    "quantity": 1500,
-                    "unit_price": 80,
-                    "observed_total": 125000,
-                },
-                result={
-                    "valid": False,
-                    "expected_total": 120000,
-                    "observed_total": 125000,
-                    "difference": 5000,
-                },
-            ),
-        ],
-    )
-
-    result = EvidenceReconciler().build_review(
-        claim=claim,
-        investigation=investigation,
-        source_agreement=0.0,
-        deterministic_validation=0.0,
-        retrieval_quality=1.0,
-        version_consistency=1.0,
-    )
-
-    assert result.status == ReviewStatus.REVIEW_REQUIRED
-    assert result.claim_id == "claim-001"
-    assert result.project_id == "project-001"
-    assert result.evidence_ids == ["invoice-chunk-001"]
-    assert len(result.findings) == 1
-    assert result.findings[0].type == FindingType.CALCULATION_ERROR
-
-
-def test_reconciler_builds_review_from_investigation():
-    from proofcheck.models.schemas import Claim, ReviewStatus
-
-    claim = Claim(
-        claim_id="claim-001",
-        project_id="project-001",
-        description="Is the invoiced quantity supported?",
-        source_document_id="invoice-001",
-        claimed_quantity=1500,
-        unit="m2",
-        claimed_unit_price=80,
-        claimed_total=125000,
-    )
-
-    investigation = InvestigationResult(
-        text="The invoice calculation contains a discrepancy.",
-        tool_calls=2,
-        tool_results=[
-            InvestigationToolResult(
-                tool_name="search_evidence",
-                arguments={"query": "invoice quantity total"},
-                result=[
-                    {
-                        "chunk_id": "invoice-chunk-001",
-                        "document_id": "invoice-001",
-                    },
-                ],
-            ),
-            InvestigationToolResult(
-                tool_name="validate_calculation",
-                arguments={
-                    "quantity": 1500,
-                    "unit_price": 80,
-                    "observed_total": 125000,
-                },
-                result={
-                    "valid": False,
-                    "expected_total": 120000,
-                    "observed_total": 125000,
-                    "difference": 5000,
-                },
-            ),
-        ],
-    )
-
-    result = EvidenceReconciler().build_review(
-        claim=claim,
-        investigation=investigation,
-        source_agreement=0.0,
-        deterministic_validation=0.0,
-        retrieval_quality=1.0,
-        version_consistency=1.0,
-    )
-
-    assert result.status == ReviewStatus.REVIEW_REQUIRED
-    assert result.claim_id == "claim-001"
-    assert result.project_id == "project-001"
-    assert result.evidence_ids == ["invoice-chunk-001"]
-    assert len(result.findings) == 1
-    assert result.findings[0].type == FindingType.CALCULATION_ERROR
-
 def test_reconciler_does_not_mark_empty_investigation_as_complete():
     investigation = InvestigationResult(
         text="No additional evidence was gathered.",
@@ -465,3 +342,44 @@ def test_reconciler_collects_evidence_ids_from_dataclass_results():
         "invoice-chunk-001",
         "measurement-chunk-001",
     ]
+
+def test_reconciler_creates_missing_evidence_finding():
+    investigation = InvestigationResult(
+        text="Approved change order evidence is missing.",
+        tool_calls=1,
+        tool_results=[
+            InvestigationToolResult(
+                tool_name="check_required_evidence",
+                arguments={
+                    "required_types": [
+                        "CHANGE_REQUEST",
+                        "APPROVED_CHANGE",
+                    ],
+                    "present_types": [
+                        "CHANGE_REQUEST",
+                    ],
+                },
+                result={
+                    "complete": False,
+                    "required_types": [
+                        "CHANGE_REQUEST",
+                        "APPROVED_CHANGE",
+                    ],
+                    "present_types": [
+                        "CHANGE_REQUEST",
+                    ],
+                    "missing_types": [
+                        "APPROVED_CHANGE",
+                    ],
+                },
+            )
+        ],
+    )
+
+    result = EvidenceReconciler().reconcile(investigation)
+
+    assert len(result.findings) == 1
+    assert result.findings[0].type == FindingType.MISSING_EVIDENCE
+    assert result.findings[0].severity == Severity.HIGH
+    assert "APPROVED_CHANGE" in result.findings[0].description
+    assert result.findings[0].evidence_ids == []

@@ -1,4 +1,5 @@
 import json
+import logging
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -7,6 +8,7 @@ from proofcheck.agent.tool_executor import ToolExecutor
 from proofcheck.agent.tools import get_investigation_tool_definitions
 from proofcheck.llm.client import LLMClient
 
+logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class InvestigationToolResult:
@@ -143,6 +145,12 @@ class InvestigationAgent:
 
                     if isinstance(arguments, str):
                         arguments = json.loads(arguments)
+
+                    logger.info(
+                        "investigation_tool_call | tool=%s | arguments=%s",
+                        tool_call.function.name,
+                        arguments,
+                    )
 
                     result = self.tool_executor.execute(
                         tool_call.function.name,

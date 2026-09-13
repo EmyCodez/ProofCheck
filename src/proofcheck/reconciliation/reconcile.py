@@ -6,14 +6,31 @@ from proofcheck.tools.validate_calculation import validate_calculation
 def reconcile_quantity(
     expected_quantity: float,
     observed_quantity: float,
-    unit: str,
+    expected_unit: str,
+    observed_unit: str,
     evidence_ids: list[str],
 ) -> Finding | None:
-    """Create a deterministic quantity-conflict finding when values differ."""
+    """Create a deterministic quantity finding when values differ or units mismatch."""
+
+    if expected_unit != observed_unit:
+        return Finding(
+            finding_id="finding-unit-mismatch",
+            type=FindingType.UNIT_MISMATCH,
+            severity=Severity.HIGH,
+            description=(
+                f"Expected unit {expected_unit} differs from "
+                f"observed unit {observed_unit}."
+            ),
+            expected_value=expected_quantity,
+            observed_value=observed_quantity,
+            unit=expected_unit,
+            evidence_ids=evidence_ids,
+        )
+
     result = compare_numeric_evidence(
         expected_value=expected_quantity,
         observed_value=observed_quantity,
-        unit=unit,
+        unit=expected_unit,
     )
 
     if result.matches:
@@ -25,12 +42,12 @@ def reconcile_quantity(
         severity=Severity.HIGH,
         description=(
             f"Observed quantity differs from expected quantity by "
-            f"{result.difference:g} {unit}."
+            f"{result.difference:g} {expected_unit}."
         ),
         expected_value=result.expected_value,
         observed_value=result.observed_value,
         difference=result.difference,
-        unit=unit,
+        unit=expected_unit,
         evidence_ids=evidence_ids,
     )
 
@@ -64,3 +81,49 @@ def reconcile_calculation(
         difference=result.difference,
         evidence_ids=evidence_ids,
     )
+
+
+def reconcile_approved_measured_invoiced(
+    approved_quantity: float,
+    measured_quantity: float,
+    invoiced_quantity: float,
+    unit: str,
+    evidence_ids: list[str],
+) -> list[Finding]:
+    """Reconcile approved, measured, and invoiced quantities deterministically."""
+
+    findings = []
+
+    measured_vs_approved = compare_numeric_evidence(
+        expected_value=approved_quantity,
+        observed_value=measured_quantity,
+        unit=unit,
+    )
+
+    invoiced_vs_measured = compare_numeric_evidence(
+        expected_value=measured_quantity,
+        observed_value=invoiced_quantity,
+        unit=unit,
+    )
+
+    # Measurement may legitimately be below the approved quantity.
+    # The invoice should agree with the verified measurement.
+    if not invoiced_vs_measured.matches:
+        findings.append(
+            Finding(
+                finding_id="finding-invoice-measurement-conflict",
+                type=FindingType.QUANTITY_CONFLICT,
+                severity=Severity.HIGH,
+                description=(
+                    f"Invoiced quantity differs from measured quantity by "
+                    f"{invoiced_vs_measured.difference:g} {unit}."
+                ),
+                expected_value=invoiced_vs_measured.expected_value,
+                observed_value=invoiced_vs_measured.observed_value,
+                difference=invoiced_vs_measured.difference,
+                unit=unit,
+                evidence_ids=evidence_ids,
+            )
+        )
+
+    return findings

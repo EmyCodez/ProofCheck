@@ -1,11 +1,15 @@
+import logging
 from dataclasses import dataclass, field
 
 from proofcheck.agent.investigator import InvestigationResult
+from proofcheck.models.schemas import Finding, FindingType, Severity
 from proofcheck.reconciliation.reconcile import (
     reconcile_calculation,
     reconcile_quantity,
 )
 from proofcheck.reconciliation.review_builder import build_review as build_structured_review
+
+logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class ReconciliationResult:
@@ -43,13 +47,28 @@ class EvidenceReconciler:
                 result = tool_result.result
 
                 if isinstance(result, dict):
-                    evidence_complete = result.get(
-                        "complete",
-                        evidence_complete,
+                    evidence_complete = result.get("complete", evidence_complete)
+                    missing_types = result.get("missing_types", [])
+                else:
+                    evidence_complete = getattr(
+                        result, "complete", evidence_complete
                     )
-                    missing_evidence.extend(
-                        result.get("missing_types", [])
+                    missing_types = getattr(
+                        result, "missing_types", []
                     )
+
+                missing_evidence.extend(missing_types)
+
+                for missing_type in missing_types:
+                    findings.append(
+                        Finding(
+                            finding_id=f"finding-missing-{missing_type.lower()}",
+                            type=FindingType.MISSING_EVIDENCE,
+                            severity=Severity.HIGH,
+                            description=f"Required evidence is missing: {missing_type}.",
+                            evidence_ids=[],
+                        )
+                     )
 
             elif tool_result.tool_name == "compare_evidence":
                 finding = self._reconcile_quantity(
@@ -101,6 +120,12 @@ class EvidenceReconciler:
     ):
         result = tool_result.result
 
+        logger.info(
+            "quantity_reconciliation_result | type=%s | result=%r",
+            type(result).__name__,
+            result,
+        )
+
         if isinstance(result, dict):
             matches = result.get("matches")
             expected_value = result.get("expected_value")
@@ -118,7 +143,8 @@ class EvidenceReconciler:
         return reconcile_quantity(
             expected_quantity=expected_value,
             observed_quantity=observed_value,
-            unit=unit,
+            expected_unit=unit,
+            observed_unit=unit,
             evidence_ids=evidence_ids,
         )
 
