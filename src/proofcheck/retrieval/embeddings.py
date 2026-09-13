@@ -1,10 +1,13 @@
 from sentence_transformers import SentenceTransformer
 
 
+DEFAULT_MODEL_NAME = "all-MiniLM-L6-v2"
+
+
 class EmbeddingService:
     """Generate semantic embeddings for evidence and search queries."""
 
-    def __init__(self, model_name: str = "all-MiniLM-L6-v2") -> None:
+    def __init__(self, model_name: str = DEFAULT_MODEL_NAME) -> None:
         self.model_name = model_name
         self.model = SentenceTransformer(model_name)
 

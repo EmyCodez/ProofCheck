@@ -1,0 +1,16 @@
+.venv/
+venv/
+.deepeval/
+src/proofcheck.egg-info/
+.git/
+.github/
+.pytest_cache/
+__pycache__/
+*.py[cod]
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+.vscode/
+.idea/
