@@ -1,17 +1,16 @@
-annotated-types==0.8.0
-iniconfig==2.3.0
-numpy==2.5.3
-packaging==26.3
-pluggy==1.6.0
+--extra-index-url https://download.pytorch.org/whl/cpu
+gradio==6.26.0
+openai==3.8.0
+python-dotenv==1.2.3
 pydantic==2.13.5
-pydantic_core==2.46.5
-Pygments==2.21.0
+numpy==2.5.3
 pymupdf==1.28.2
-pytest==8.4.2
+sentence-transformers==6.0.1
 scikit-learn==1.9.0
 scipy==1.18.1
-sentence-transformers==6.0.1
 torch==2.14.0+cpu
 transformers==5.16.1
-typing-inspection==0.4.4
-typing_extensions==4.16.0
+safetensors==0.8.0
+tokenizers==0.23.2
+tqdm==4.70.0
+click==8.5.0
