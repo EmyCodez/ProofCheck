@@ -44,7 +44,7 @@ The underlying architecture is intentionally domain-agnostic and can be adapted 
                 ┌──────────────┼──────────────┐
                 ▼              ▼              ▼
         search_evidence  check_required   compare_evidence
-                                        validate_calculation
+                                         validate_calculation
                 │              │              │
                 └──────────────┼──────────────┘
                                ▼
@@ -100,10 +100,10 @@ MAX_TOOL_CALLS = 8
 
 The LLM-facing investigation surface intentionally exposes only:
 
-* `search_evidence`
-* `check_required_evidence`
-* `compare_evidence`
-* `validate_calculation`
+- `search_evidence`
+- `check_required_evidence`
+- `compare_evidence`
+- `validate_calculation`
 
 `generate_review_report` remains system-side so that final structured review assembly is not delegated to the LLM.
 
@@ -113,7 +113,7 @@ Numerical conclusions are handled by deterministic Python functions.
 
 ### Numeric comparison
 
-The reconciliation layer can compare expected and observed quantities using an explicit tolerance.
+The reconciliation layer compares expected and observed quantities using explicit deterministic logic and tolerance handling.
 
 ### Calculation validation
 
@@ -129,19 +129,19 @@ and compares the deterministic result with the observed total.
 
 `EvidenceReconciler` converts structured investigation results into:
 
-* evidence IDs
-* evidence completeness
-* missing evidence
-* deterministic findings
-* technical failure state
+- evidence IDs
+- evidence completeness
+- missing evidence
+- deterministic findings
+- technical failure state
 
 The decision layer then maps the result to one of the supported outcomes.
 
 ## Possible Outcomes
 
-* `SUPPORTED` — available evidence is sufficiently consistent.
-* `REVIEW_REQUIRED` — evidence is incomplete, conflicting, or reveals a material discrepancy.
-* `BLOCKED` — a technical dependency such as parsing, retrieval, or validation failed, so the system cannot reliably establish the result.
+- `SUPPORTED` — available evidence is sufficiently consistent.
+- `REVIEW_REQUIRED` — evidence is incomplete, conflicting, or reveals a material discrepancy.
+- `BLOCKED` — a technical dependency such as parsing, retrieval, or validation failed, so the system cannot reliably establish the result.
 
 A technical failure is **not** treated as missing evidence.
 
@@ -149,14 +149,14 @@ A technical failure is **not** treated as missing evidence.
 
 ProofCheck does not:
 
-* approve or reject payments or business decisions
-* approve or reject change orders
-* determine fraud
-* provide legal advice
-* modify source documents
-* contact external parties
-* invent missing evidence
-* silently override conflicting evidence
+- approve or reject payments or business decisions
+- approve or reject change orders
+- determine fraud
+- provide legal advice
+- modify source documents
+- contact external parties
+- invent missing evidence
+- silently override conflicting evidence
 
 Supplied document content is treated as **untrusted evidence**, not as instructions to the agent.
 
@@ -180,32 +180,32 @@ The document pipeline uses structure-aware chunking so that important relationsh
 
 Examples include:
 
-* contract clauses
-* BOQ table rows with headers
-* invoice line items
-* change-order approval sections
-* measurement records
-* complete correspondence messages
+- contract clauses
+- BOQ table rows with headers
+- invoice line items
+- change-order approval sections
+- measurement records
+- complete correspondence messages
 
 Each retrieval chunk preserves metadata such as:
 
-* project ID
-* document ID
-* document type
-* page
-* section
-* chunk type
-* references
+- project ID
+- document ID
+- document type
+- page
+- section
+- chunk type
+- references
 
 ### RAG Implementation
 
-* Sentence Transformers
-* `all-MiniLM-L6-v2`
-* 384-dimensional embeddings
-* in-memory vector store
-* project/document-type metadata filtering
-* semantic retrieval
-* evidence reconstruction
+- Sentence Transformers
+- `all-MiniLM-L6-v2`
+- 384-dimensional embeddings
+- in-memory vector store
+- project/document-type metadata filtering
+- semantic retrieval
+- evidence reconstruction
 
 The vector store is a **retrieval mechanism, not the source of truth**.
 
@@ -213,29 +213,27 @@ The vector store is a **retrieval mechanism, not the source of truth**.
 
 The retrieval layer was evaluated using:
 
-* 8 core retrieval questions
-* 3 robustness tests
+- 8 core retrieval questions
+- 3 robustness tests
 
-Latest retrieval evaluation:
-
-**11 passed**
+**11 retrieval tests passed.**
 
 ## Evaluation Foundation
 
 ProofCheck includes **12 golden scenarios** covering cases such as:
 
-* perfect match
-* invoice exceeding approved quantity
-* arithmetic error
-* requested but unapproved change
-* measurement below approved quantity
-* unit mismatch
-* latest revision
-* ambiguous correspondence
-* retrieval failure
-* prompt injection in a supplied PDF
-* table-context preservation
-* requested vs approved quantity
+- perfect match
+- invoice exceeding approved quantity
+- arithmetic error
+- requested but unapproved change
+- measurement below approved quantity
+- unit mismatch
+- latest revision
+- ambiguous correspondence
+- retrieval failure
+- prompt injection in a supplied PDF
+- table-context preservation
+- requested vs approved quantity
 
 These scenarios are designed to prevent simplistic reconciliation logic.
 
@@ -243,7 +241,7 @@ For example:
 
 > A requested change is not automatically an approved change.
 
-and:
+And:
 
 > The BOQ quantity is not automatically treated as the maximum payable quantity.
 
@@ -257,11 +255,11 @@ The demonstration project is:
 
 Relevant quantities:
 
-* Original quantity: **1,000 m²**
-* Approved additional quantity: **300 m²**
-* Approved potential total: **1,300 m²**
-* Measured quantity: **1,280 m²**
-* Invoiced quantity: **1,500 m²**
+- Original quantity: **1,000 m²**
+- Approved additional quantity: **300 m²**
+- Approved potential total: **1,300 m²**
+- Measured quantity: **1,280 m²**
+- Invoiced quantity: **1,500 m²**
 
 The primary discrepancy is:
 
@@ -275,111 +273,184 @@ and preserves the supporting evidence for human review.
 
 ## Technology
 
-* Python
-* Pydantic
-* Sentence Transformers
-* PyTorch
-* Gemini API
-* OpenAI-compatible API client
-* Gradio
-* pytest
+- Python
+- Pydantic
+- Sentence Transformers
+- PyTorch
+- Gemini API
+- OpenAI-compatible API client
+- Gradio
+- pytest
+- DeepEval
+- Google Cloud Run
 
 ## Development Progress
 
 ### Day 1 — Foundation ✅
 
-* Canonical data models
-* Sample evidence dataset
-* 12 golden evaluation scenarios
-* Repository structure
-* Initial test expectations
-* Scope and safety boundaries
+- Canonical data models
+- Sample evidence dataset
+- 12 golden evaluation scenarios
+- Repository structure
+- Initial test expectations
+- Scope and safety boundaries
 
 ### Day 2 — Document Pipeline ✅
 
-* Structure-aware document parsing
-* Document-aware chunking
-* Metadata preservation
-* Seven-document sample evidence pipeline
-* Parser/chunker tests
+- Structure-aware document parsing
+- Document-aware chunking
+- Metadata preservation
+- Seven-document sample evidence pipeline
+- Parser/chunker tests
 
 ### Day 3 — RAG & Retrieval ✅
 
-* Sentence Transformer embeddings
-* In-memory vector store
-* Metadata filtering
-* Semantic retrieval
-* Retrieval evaluation
-* 11 retrieval tests passing
+- Sentence Transformer embeddings
+- In-memory vector store
+- Metadata filtering
+- Semantic retrieval
+- Retrieval evaluation
+- 11 retrieval tests passing
 
 ### Day 4 — Agent & Reconciliation Foundation ✅
 
-* Gemini LLM integration
-* Bounded investigation agent
-* Typed tool contracts
-* Tool execution
-* Deterministic validation
-* Structured reconciliation
-* Failure handling
-* Prompt-injection boundary
+- Gemini LLM integration
+- Bounded investigation agent
+- Typed tool contracts
+- Tool execution
+- Deterministic validation
+- Structured reconciliation
+- Failure handling
+- Prompt-injection boundary
 
 ### Day 5 — Application & UI ✅
 
-* Gradio application
-* Application/service layer
-* Real backend connection
-* Structured reconciliation state
-* Safe operational logging
-* Clear/reset interaction
-* Visible investigation progress
-* Local end-to-end demo
+- Gradio application
+- Application/service layer
+- Real backend connection
+- Structured reconciliation state
+- Safe operational logging
+- Clear/reset interaction
+- Visible investigation progress
+- Local end-to-end demo
 
 ### Day 6 — Reliability & Safety ✅
 
-* Input validation and whitespace sanitization
-* Gemini secrets/configuration cleanup
-* Investigation tool boundary tightened
-* Deterministic EvidenceReconciler integration
-* Bounded investigation retained at 8 tool calls
-* Prompt guidance strengthened for semantic numeric roles
-* Safe operational logging
-* Known issue triage
-* Successful live Gemini validation
+- Input validation and whitespace sanitization
+- Gemini secrets/configuration cleanup
+- Investigation tool boundary tightened
+- Deterministic `EvidenceReconciler` integration
+- Bounded investigation retained at 8 tool calls
+- Prompt guidance strengthened for semantic numeric roles
+- Safe operational logging
+- Known issue triage
+- Successful live Gemini validation
 
-## Verification
+### Final Evaluation & Deployment ✅
 
-Latest full regression suite:
+- **145/145 deterministic tests passing**
+- Real Gemini investigation test passing
+- DeepEval evaluation completed
+- Outcome Correctness: **1.0**
+- Evidence Grounding: **1.0**
+- Decision Boundary Safety: **1.0**
+- Overall DeepEval pass rate: **100%**
+- Investigation tool calls: **7**
+- Maximum allowed tool calls: **8**
+- Agent latency: **11.18 seconds**
+- Investigation completed without blocking
+- Cloud Run deployment successful
+- Production revision serving **100% traffic**
 
-**131 tests passed**
+## Evaluation Results
 
-Successful live investigation:
+ProofCheck was evaluated using both deterministic automated tests and a real Gemini-powered end-to-end investigation.
 
-* Model: `gemini-3.5-flash-lite`
-* Investigation calls: **7**
-* Maximum allowed calls: **8**
-* Result: `REVIEW_REQUIRED`
-* Deterministic discrepancy: **220 m²**
+### Deterministic Regression
 
-## Current Known Limitations
+**145/145 tests passed.**
 
-The following remain intentionally tracked rather than silently hidden:
+This suite protects:
 
-* Tool-selection instrumentation can be strengthened to formally verify consistent deterministic comparison invocation.
-* An edge case involving incomplete evidence and missing-evidence reporting remains under review.
-* The current UI project selection still has a known limitation around mapping the selected project to `project_id`.
-* Gemini API availability/rate-limit errors remain an external dependency risk.
+- document parsing
+- structure-aware chunking
+- retrieval
+- evidence handling
+- deterministic calculations
+- reconciliation
+- safety boundaries
+- failure handling
+- golden scenarios
 
-These limitations do not change the core safety boundary: the system does not invent evidence or make autonomous business decisions.
+### Real Agent Evaluation
+
+The core invoice-reconciliation scenario was evaluated with the actual Gemini investigation agent.
+
+```text
+Tool calls:       7
+Maximum allowed:  8
+Blocked:          False
+Agent latency:    11.18 seconds
+DeepEval pass:    100%
+```
+
+DeepEval evaluated three dimensions:
+
+| Metric | Score | Threshold |
+|---|---:|---:|
+| Outcome Correctness | **1.0** | 0.7 |
+| Evidence Grounding | **1.0** | 0.7 |
+| Decision Boundary Safety | **1.0** | 0.7 |
+
+The evaluation confirmed that the agent:
+
+- correctly concluded `REVIEW_REQUIRED`
+- compared the approved, measured, and invoiced quantities
+- grounded findings in specific evidence
+- preserved document provenance
+- avoided autonomous payment decisions
+- avoided fraud allegations
+- avoided legal advice
+- maintained the human-review boundary
+
+Evaluation cost for the run was approximately **$0.0088**.
+
+## Production Deployment
+
+ProofCheck is deployed on **Google Cloud Run**.
+
+The deployed application serves the ProofCheck Gradio interface and connects to the real investigation backend.
+
+```text
+Google Cloud Project:
+proofcheck-508516
+```
+
+The application is currently serving a production Cloud Run revision with **100% traffic**.
+
+Live application:
+
+**https://proofcheck-914370781622.us-central1.run.app**
 
 ## Project Status
 
-🚧 **Day 6 complete — implementation, reliability work, and regression verification complete.**
+🚀 **Implementation, evaluation, and deployment complete.**
 
-Next milestone:
+ProofCheck has progressed from a document-reconciliation concept to a deployed agentic application with:
 
-**Day 7 — Evaluation**
+- RAG-based evidence retrieval
+- bounded Gemini investigation
+- typed tool contracts
+- deterministic numerical validation
+- structured reconciliation
+- provenance-aware findings
+- prompt-injection defenses
+- human-in-the-loop decision boundaries
+- automated regression testing
+- real-agent evaluation
+- production deployment
 
-The focus will be on turning the existing golden evaluation foundation into meaningful end-to-end evaluation evidence covering final outcomes, evidence selection, deterministic validation, safety behavior, and failure recovery.
+The project is now **feature-frozen**. Further work is focused on demonstration, documentation, and final submission rather than expanding application scope.
 
 ## Repository
 
